@@ -8,8 +8,18 @@
 #include <string.h>
 #include <sys/types.h>
 #include <netdb.h>
+
+#define BE_A_SERVER 1
+#define BE_A_CLIENT 0
+
+typedef struct Arguments_s
+{
+    uint16_t            nSocketNum;
+    char               *pInetAddr;
+    struct sockaddr_in  serv_addr;
+}Arguments;
  
-int clientmain(void)
+int clientmain(Arguments *pArgs)
 {
     int sockfd = 0,n = 0;
     char recvBuff[1024];
@@ -50,24 +60,18 @@ int clientmain(void)
     return 0;
 }
  
-int main(void)
+int servermain(Arguments *pArgs)
 {
     int listenfd = 0,connfd = 0;
-    struct sockaddr_in serv_addr;
     char sendBuff[1025];  
     int numrv;  
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     printf("socket retrieve success\n");
 
-    memset(&serv_addr, '0', sizeof(serv_addr));
     memset(sendBuff, '0', sizeof(sendBuff));
 
-    serv_addr.sin_family = AF_INET;    
-    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    serv_addr.sin_port = htons(5000);    
-
-    bind(listenfd, (struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    bind(listenfd, (struct sockaddr*)&pArgs->serv_addr,sizeof(pArgs->serv_addr));
 
     if(listen(listenfd, 10) == -1){
         printf("Failed to listen\n");
@@ -86,6 +90,31 @@ int main(void)
         sleep(1);
     }
 
+
+    return 0;
+}
+
+int main(void)
+{
+    int programType = BE_A_SERVER;
+    Arguments   args;
+
+    args.nSocketNum = 5000;
+    args.pInetAddr = "127.0.0.1";
+
+    memset(&args.serv_addr, '0', sizeof(args.serv_addr));
+    args.serv_addr.sin_family = AF_INET;
+    args.serv_addr.sin_port = htons(args.nSocketNum);
+    args.serv_addr.sin_addr.s_addr = inet_addr(args.pInetAddr);
+
+    if( programType == BE_A_SERVER )
+    {
+        return servermain( &args );
+    }
+    else
+    {
+        return clientmain( &args );
+    }
 
     return 0;
 }
